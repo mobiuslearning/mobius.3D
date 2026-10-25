@@ -1,9 +1,11 @@
-import { albums as demos, type Album, type AlbumPage } from './albums';
+import type { Album, AlbumPage } from './albums';
+import { coverSource } from './media';
 import { FolioScene } from './scene';
 import { saveAlbum,loadAlbums } from './storage';
 
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
-const allAlbums=[...demos];
+const projectAlbums=JSON.parse($('album-data').textContent || '[]') as Album[];
+const allAlbums=[...projectAlbums];
 let scene:FolioScene|null=null;
 let active:Album|null=null;
 let spread=0;
@@ -31,7 +33,7 @@ function updateReader(album:Album|null){
   active=album;document.body.classList.toggle('is-reading',!!album);show($('reader'),!!album);show($('catalog'),false);$('catalog-toggle').setAttribute('aria-expanded','false');
   ['intro','filters','desk-footer'].forEach(id=>{$(id).inert=!!album;$(id).setAttribute('aria-hidden',String(!!album));});
   if(fallback)show($('webgl-fallback'),!album);
-  if(album){$('reader-title').textContent=album.title;$('reader-meta').textContent=`${album.date}  /  ${album.location}`;$('announcer').textContent=`已翻开《${album.title}》`;$('back').focus({preventScroll:true});}
+  if(album){$('reader-title').textContent=album.title;$('reader-meta').textContent=`${album.date}  /  ${album.location}`;updateSpread(0,album.pages.length,album.pages.slice(0,2));$('announcer').textContent=`已翻开《${album.title}》`;$('back').focus({preventScroll:true});}
   else {currentVideos.forEach(v=>v.pause());currentVideos=[];show($('video-controls'),false);$('announcer').textContent='已回到桌面';if(openingElement?.closest('#catalog'))$('catalog-toggle').focus({preventScroll:true});else if(openingElement&&openingElement!==document.body)openingElement.focus({preventScroll:true});}
 }
 function updateSpread(index:number,total:number,pages:AlbumPage[]){
@@ -48,7 +50,7 @@ function makeCatalog(){
   $('catalog-list').replaceChildren();
   allAlbums.filter(a=>filter==='全部'||a.category===filter).forEach(album=>{
     const button=document.createElement('button');button.className='catalog-item';button.setAttribute('aria-label',`翻开${album.title}`);
-    const image=document.createElement('img');image.className='catalog-cover';image.alt='';image.src=album.cover.startsWith('/')||album.cover.startsWith('blob:')?album.cover:`/media/${album.cover}.jpg`;image.style.background=album.color;
+    const image=document.createElement('img');image.className='catalog-cover';image.alt='';image.src=coverSource(album.cover);image.style.background=album.color;
     const title=document.createElement('span');const name=document.createElement('span');name.className='catalog-item-title';name.textContent=album.title;
     const meta=document.createElement('div');meta.className='catalog-item-subtitle';meta.textContent=`${album.category} · ${album.pages.length} 页 · ${album.date}`;title.append(name,meta);
     const arrow=document.createElement('span');arrow.className='catalog-item-arrow';arrow.textContent='↗';button.append(image,title,arrow);
@@ -128,12 +130,12 @@ $('create-form').addEventListener('submit',async e=>{
   if(files.some(f=>!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(f.type))){toast('请选择 JPG、PNG、WebP 照片，或 MP4、WebM 视频。');return;}
   if(files.reduce((sum,f)=>sum+f.size,0)>200*1024*1024){toast('每本画册最多保存 200 MB，请减少文件或压缩视频。');return;}
   const button=$<HTMLButtonElement>('create-submit');button.disabled=true;button.textContent='正在装订你的时光…';
-  const newIndex=allAlbums.length-demos.length;
+  const newIndex=allAlbums.length;
   try{
     const posters:(Blob|undefined)[]=[];
     for(let start=0;start<files.length;start+=3){const batch=await Promise.all(files.slice(start,start+3).map(file=>file.type.startsWith('video')?videoPoster(file):Promise.resolve(undefined)));posters.push(...batch);}
     const pages:AlbumPage[]=files.map((file,i)=>({type:file.type.startsWith('video')?'video':'photo',src:URL.createObjectURL(file),caption:i===0?$<HTMLInputElement>('album-caption').value.trim():undefined,poster:file.type.startsWith('video')?(posters[i]?URL.createObjectURL(posters[i]!):'/media/video-cover.svg'):undefined}));
-    const album:Album={id:crypto.randomUUID(),title,subtitle:'MY PERSONAL MEMORIES',category:$<HTMLSelectElement>('album-category').value as Album['category'],color:$<HTMLInputElement>('album-color').value,ink:'#f8f2df',cover:pages[0].type==='photo'?pages[0].src:pages[0].poster!,layout:'split',date:new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit'}).format(new Date()),location:'我的独家记忆',x:-5.6+(newIndex%4)*4,z:10.5+Math.floor(newIndex/4)*5,angle:.04,pages};
+    const album:Album={id:crypto.randomUUID(),title,subtitle:'MY PERSONAL MEMORIES',category:$<HTMLSelectElement>('album-category').value as Album['category'],color:$<HTMLInputElement>('album-color').value,ink:'#f8f2df',cover:pages[0].type==='photo'?pages[0].src:pages[0].poster!,layout:'split',date:new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit'}).format(new Date()),location:'我的独家记忆',x:-5.6+(newIndex%4)*3.95,z:-4.6+Math.floor(newIndex/4)*5.1,angle:.04,pages};
     await saveAlbum({album,files,posters});allAlbums.push(album);if(scene)await scene.addAlbum(album);filter='全部';scene?.filter(filter);$('filters').querySelectorAll<HTMLButtonElement>('.filter').forEach(b=>{const selected=b.dataset.category==='全部';b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});makeCatalog();
     $<HTMLDialogElement>('create-dialog').close();$<HTMLFormElement>('create-form').reset();$('file-label').textContent='选择照片或视频';toast('新画册已收藏在这台设备，点开看看吧。');
     openAlbum(album.id);

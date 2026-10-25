@@ -1,5 +1,9 @@
 ---
 import '../styles/global.css';
+import { getCollection } from 'astro:content';
+import { buildProjectAlbums } from '../lib/markdown-albums';
+const albums = buildProjectAlbums(await getCollection('albums'));
+const albumJson = JSON.stringify(albums).replace(/</g, '\\u003c');
 const icons = {
  book: '<path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1V5Z"/>',
  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
@@ -32,7 +36,7 @@ const icons = {
           <span class="brand-name">拾光<span class="brand-en">FOLIO</span></span>
         </a>
         <nav id="filters" aria-label="画册分类" class="filters flex items-center gap-1">
-          <button class="filter active" data-category="全部" aria-pressed="true">全部画册<span>12</span></button>
+          <button class="filter active" data-category="全部" aria-pressed="true">全部画册<span>{albums.length}</span></button>
           <button class="filter" data-category="旅途" aria-pressed="false">旅途</button>
           <button class="filter" data-category="日常" aria-pressed="false">日常</button>
           <button class="filter" data-category="片刻" aria-pressed="false">片刻</button>
@@ -55,7 +59,7 @@ const icons = {
       <div id="loading" class="loading"><span class="loading-book"></span><span>正在整理时光 <span id="load-progress">0%</span></span></div>
       <div id="webgl-fallback" class="webgl-fallback hidden"><p>当前设备无法打开 3D 桌面</p><button class="primary-btn" id="fallback-catalog">浏览画册目录</button></div>
       <footer id="desk-footer" class="desk-footer flex items-end justify-between">
-        <div class="desk-caption"><div class="flex items-center gap-2"><span class="status-dot"></span> 我的时光收藏 <span class="caption-separator">/</span><span id="album-total">12 本画册</span></div><p>留住生活里，那些微小而闪光的瞬间。</p></div>
+        <div class="desk-caption"><div class="flex items-center gap-2"><span class="status-dot"></span> 我的时光收藏 <span class="caption-separator">/</span><span id="album-total">{albums.length} 本画册</span></div><p>留住生活里，那些微小而闪光的瞬间。</p></div>
         <div class="desk-tools flex items-center gap-3">
           <button id="catalog-toggle" class="catalog-btn flex items-center gap-2"><svg viewBox="0 0 24 24" set:html={icons.grid}/>画册目录</button>
           <div class="zoom-tools flex items-center">
@@ -82,6 +86,7 @@ const icons = {
       <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
       <div id="announcer" class="sr-only" aria-live="polite"></div>
     </main>
+    <script is:inline id="album-data" type="application/json" set:html={albumJson}/>
     <script>import '../lib/app';</script>
   </body>
 </html>
