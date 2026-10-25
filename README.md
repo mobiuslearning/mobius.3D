@@ -4,13 +4,18 @@
 
 ## 本地运行
 
+需要 Node.js 22.23.4 或更新版本。
+
 ```sh
-cd /Users/mobius/codex/mobius.3D/folio
+git clone https://github.com/mobiuslearning/mobius.3D.git
+cd mobius.3D
 npm ci
 npm run dev
 ```
 
 打开终端输出的本地地址。构建使用 `npm run build`，类型检查使用 `npm run check`，静态产物位于 `dist/`，可部署到任何静态托管服务。
+
+如果使用本次任务已有的本地源码，项目目录为 `/Users/mobius/codex/mobius.3D/folio`，进入该目录后直接运行 `npm run dev` 即可。
 
 受限运行环境中可设置 `ASTRO_TELEMETRY_DISABLED=1`，避免 Astro 尝试写入用户配置目录。
 
