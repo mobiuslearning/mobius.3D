@@ -75,7 +75,11 @@ export class FolioScene {
     this.applyCamera();
   };
   private baseSize(){return innerWidth<640?28:innerWidth<1000?21:18;}
-  private readerSize(){return Math.max(6,5.9/(innerWidth/innerHeight));}
+  private readerSize(){
+    const width=this.container.clientWidth,height=this.container.clientHeight;
+    // Fill more of the reader while leaving room for the header and page controls.
+    return Math.max(5.1,5.4/(width/height),3*height/Math.max(height-300,160));
+  }
   async addAlbum(album:Album){
     const root=new THREE.Group();root.position.set(album.x+3,0,album.z+1);root.rotation.y=album.angle;
     const cloth=new THREE.MeshStandardMaterial({color:album.color,roughness:.92});
@@ -105,7 +109,7 @@ export class FolioScene {
     this.onRead(book.album);this.onHover(null,0,0);
     this.books.forEach(other=>{if(other===book)return;other.root.traverse(obj=>{if(isMesh(obj)){const materials=Array.isArray(obj.material)?obj.material:[obj.material];materials.forEach(mat=>{mat.transparent=true;mat.depthWrite=false;mat.needsUpdate=true;});obj.castShadow=false;}});});
     this.tween(650,t=>this.books.forEach(other=>{if(other!==book)other.root.traverse(obj=>{if(isMesh(obj)){const materials=Array.isArray(obj.material)?obj.material:[obj.material];materials.forEach(mat=>mat.opacity=1-t);}});}),()=>{this.books.forEach(other=>{if(other!==book)other.root.visible=false;});});
-    const target=book.home.clone().add(new THREE.Vector3(-W/2,0,0));
+    const target=book.home.clone().add(new THREE.Vector3(-W/2,.25,0));
     const from=this.look.clone(),startSize=this.viewSize,startAngle=book.root.rotation.y;
     this.target.copy(target);
     this.tween(1100,t=>{this.look.lerpVectors(from,target,t);this.viewSize=THREE.MathUtils.lerp(startSize,this.readerSize(),t);book.root.rotation.y=THREE.MathUtils.lerp(startAngle,0,t);book.root.position.y=THREE.MathUtils.lerp(book.hover,.1,t);});
