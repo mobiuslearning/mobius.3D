@@ -141,7 +141,7 @@ export class FolioScene {
     [book.left,book.right].forEach((mesh,i)=>{const mat=mesh.material as THREE.MeshStandardMaterial;mat.map=maps[i];mat.needsUpdate=true;});
     pages.forEach((page,i)=>{
       if(page.type!=='video')return;
-      const video=document.createElement('video');video.src=page.src;video.preload='metadata';video.muted=true;video.playsInline=true;video.loop=true;
+      const video=document.createElement('video');video.crossOrigin='anonymous';video.preload='metadata';video.muted=true;video.playsInline=true;video.loop=true;video.src=page.src;
       const tex=new THREE.VideoTexture(video);tex.colorSpace=THREE.SRGBColorSpace;
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(W*.89,H*.5),new THREE.MeshBasicMaterial({map:tex,toneMapped:false}));
       mesh.rotation.x=-Math.PI/2;mesh.position.set(i===0?-W:0,i===0?.38:.278,0);mesh.visible=false;book.root.add(mesh);this.videoMeshes.push(mesh);this.videos.push(video);

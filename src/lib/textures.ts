@@ -1,11 +1,19 @@
 import * as THREE from 'three';
 import type { Album, AlbumPage } from './albums';
+import { coverSource } from './media';
 
 const images = new Map<string, HTMLImageElement>();
 const textures = new Map<string, THREE.CanvasTexture>();
 export function loadImage(src: string): Promise<HTMLImageElement> {
   if (images.has(src)) return Promise.resolve(images.get(src)!);
-  return new Promise((resolve, reject) => { const image = new Image(); image.onload = () => { images.set(src, image); resolve(image); }; image.onerror = reject; image.src = src; });
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const timer = setTimeout(() => { image.onload = image.onerror = null; image.src = ''; reject(new Error('图片加载超时')); }, 15000);
+    image.crossOrigin = 'anonymous';
+    image.onload = () => { clearTimeout(timer); images.set(src, image); resolve(image); };
+    image.onerror = () => { clearTimeout(timer); reject(new Error('图片无法加载，请检查直链和跨域设置')); };
+    image.src = src;
+  });
 }
 function canvas(w=768,h=1024) { const el=document.createElement('canvas');el.width=w;el.height=h;return { el,ctx:el.getContext('2d')! }; }
 function texture(el: HTMLCanvasElement) { const tex=new THREE.CanvasTexture(el);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;return tex; }
@@ -21,7 +29,7 @@ function paperNoise(ctx:CanvasRenderingContext2D,w:number,h:number,strength=8) {
 export async function coverTexture(album:Album):Promise<THREE.CanvasTexture> {
   const {el,ctx}=canvas(); const w=el.width,h=el.height;
   ctx.fillStyle=album.color;ctx.fillRect(0,0,w,h);
-  const src=album.cover.startsWith('blob:')||album.cover.startsWith('/')?album.cover:`/media/${album.cover}.jpg`;
+  const src=coverSource(album.cover);
   let img: HTMLImageElement|undefined;try{img=await loadImage(src);}catch{}
   if(album.layout==='full'){
     if(img)crop(ctx,img,0,0,w,h);
@@ -36,7 +44,7 @@ export async function coverTexture(album:Album):Promise<THREE.CanvasTexture> {
     ctx.font='16px Arial';ctx.fillText(album.subtitle,63,232);
     if(img)crop(ctx,img,62,300,w-124,h-440);
     ctx.fillStyle=album.ink;ctx.font='15px "Songti SC",serif';ctx.fillText('把沿途的光，收藏成册。',63,h-75);
-    ctx.textAlign='right';ctx.font='15px Arial';ctx.fillText('01 — 06',w-62,h-75);ctx.textAlign='left';
+    ctx.textAlign='right';ctx.font='15px Arial';ctx.fillText(`01 — ${String(album.pages.length).padStart(2,'0')}`,w-62,h-75);ctx.textAlign='left';
   } else if(album.layout==='split') {
     if(img)crop(ctx,img,0,320,w,h-320);
     ctx.fillStyle=album.ink;ctx.font='18px Arial';ctx.fillText(album.date,53,64);
@@ -62,12 +70,12 @@ export async function pageTexture(page?:AlbumPage,index=0):Promise<THREE.CanvasT
   ctx.fillStyle='#f5f2e9';ctx.fillRect(0,0,w,h);
   if(page){
     try{
-      const img=await loadImage(page.type==='video'?(page.poster||'/media/flower.jpg'):page.src);
+      const img=await loadImage(page.type==='video'?(page.poster||'/media/video-cover.svg'):page.src);
       const landscape=img.width>img.height;
       const area=landscape?{x:38,y:225,w:w-76,h:530}:{x:45,y:65,w:w-90,h:h-160};
       crop(ctx,img,area.x,area.y,area.w,area.h);
       if(page.type==='video') {ctx.fillStyle='#f8f5e6d9';ctx.beginPath();ctx.arc(w/2,h/2,32,0,Math.PI*2);ctx.fill();ctx.fillStyle='#59684e';ctx.beginPath();ctx.moveTo(w/2-7,h/2-12);ctx.lineTo(w/2+14,h/2);ctx.lineTo(w/2-7,h/2+12);ctx.fill();ctx.font='12px Arial';ctx.fillStyle='#7b806b';ctx.textAlign='center';ctx.fillText('A MOMENT IN MOTION',w/2,area.y+area.h+48);}
-    }catch{ctx.fillStyle='#929b80';ctx.font='25px "Songti SC",serif';ctx.textAlign='center';ctx.fillText('留一点空白，给回忆。',w/2,h/2);}
+    }catch{ctx.fillStyle='#929b80';ctx.font='25px "Songti SC",serif';ctx.textAlign='center';ctx.fillText('画面暂时无法加载',w/2,h/2);ctx.font='16px sans-serif';ctx.fillText('请检查媒体地址和跨域设置',w/2,h/2+40);}
   }
   ctx.textAlign='center';ctx.fillStyle='#939582';ctx.font='13px Arial';ctx.fillText(String(index+1).padStart(2,'0'),w/2,h-35);
   paperNoise(ctx,w,h,4);
