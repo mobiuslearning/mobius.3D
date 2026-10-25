@@ -1,0 +1,87 @@
+---
+import '../styles/global.css';
+const icons = {
+ book: '<path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1V5Z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+ grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+ sound:'<path d="m11 5-6 4H2v6h3l6 4V5ZM16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/>',
+ help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5m0 3h.01"/>',
+ reset:'<path d="M3 10a9 9 0 1 1 1 7M3 4v6h6"/>', close:'<path d="m6 6 12 12M6 18 18 6"/>',
+ left:'<path d="m14 6-6 6 6 6"/>',right:'<path d="m10 6 6 6-6 6"/>',
+ expand:'<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
+ play:'<path d="m9 5 11 7-11 7V5Z"/>',upload:'<path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/>',
+};
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ede7dc" />
+    <meta name="description" content="一个收藏时光的地方。在无限桌面上，翻开一本 3D 影音画册，重温照片与影像里的每一个当下。" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>拾光 · 让回忆有迹可循</title>
+  </head>
+  <body>
+    <main id="app">
+      <div id="scene" role="application" aria-label="3D 画册桌面，拖动平移，滚轮缩放。也可使用画册目录打开画册。"></div>
+      <div class="vignette" aria-hidden="true"></div>
+      <header class="header flex items-center justify-between">
+        <a class="brand flex items-center gap-3" href="/" aria-label="拾光首页">
+          <span class="brand-mark"><svg viewBox="0 0 24 24" set:html={icons.book}/></span>
+          <span class="brand-name">拾光<span class="brand-en">FOLIO</span></span>
+        </a>
+        <nav id="filters" aria-label="画册分类" class="filters flex items-center gap-1">
+          <button class="filter active" data-category="全部" aria-pressed="true">全部画册<span>12</span></button>
+          <button class="filter" data-category="旅途" aria-pressed="false">旅途</button>
+          <button class="filter" data-category="日常" aria-pressed="false">日常</button>
+          <button class="filter" data-category="片刻" aria-pressed="false">片刻</button>
+        </nav>
+        <div class="header-actions flex items-center gap-3">
+          <button id="sound" class="icon-btn sound-off" aria-label="开启翻页音效" aria-pressed="false" title="翻页音效"><svg viewBox="0 0 24 24" set:html={icons.sound}/><span class="sound-slash"></span></button>
+          <button id="help" class="icon-btn" aria-label="查看操作指南" title="操作指南"><svg viewBox="0 0 24 24" set:html={icons.help}/></button>
+          <span class="header-divider"></span>
+          <button id="add-album" class="add-btn flex items-center gap-2"><svg viewBox="0 0 24 24" set:html={icons.plus}/><span>新建画册</span></button>
+        </div>
+      </header>
+      <section id="intro" class="intro pointer-events-none">
+        <div class="eyebrow flex items-center gap-2"><span class="tiny-sun">✳</span> A LITTLE SPACE FOR YOUR MEMORIES</div>
+        <h1>把时光，<br/>慢慢翻开<span class="title-dot">。</span></h1>
+        <p>让照片有温度，让回忆有迹可循。</p>
+        <div class="intro-rule"></div>
+        <div class="intro-foot">每一本，都是一段值得珍藏的时光。</div>
+      </section>
+      <div id="hover-label" class="hover-label" aria-hidden="true"></div>
+      <div id="loading" class="loading"><span class="loading-book"></span><span>正在整理时光 <span id="load-progress">0%</span></span></div>
+      <div id="webgl-fallback" class="webgl-fallback hidden"><p>当前设备无法打开 3D 桌面</p><button class="primary-btn" id="fallback-catalog">浏览画册目录</button></div>
+      <footer id="desk-footer" class="desk-footer flex items-end justify-between">
+        <div class="desk-caption"><div class="flex items-center gap-2"><span class="status-dot"></span> 我的时光收藏 <span class="caption-separator">/</span><span id="album-total">12 本画册</span></div><p>留住生活里，那些微小而闪光的瞬间。</p></div>
+        <div class="desk-tools flex items-center gap-3">
+          <button id="catalog-toggle" class="catalog-btn flex items-center gap-2"><svg viewBox="0 0 24 24" set:html={icons.grid}/>画册目录</button>
+          <div class="zoom-tools flex items-center">
+            <button id="zoom-out" aria-label="缩小"><svg viewBox="0 0 24 24" set:html={icons.minus}/></button>
+            <span id="zoom-level">100%</span>
+            <button id="zoom-in" aria-label="放大"><svg viewBox="0 0 24 24" set:html={icons.plus}/></button>
+            <span class="tool-divider"></span>
+            <button id="reset" aria-label="回到桌面中心" title="回到桌面中心"><svg viewBox="0 0 24 24" set:html={icons.reset}/></button>
+          </div>
+        </div>
+        <p class="gesture-hint"><span>↔</span> 拖动探索 <i>·</i> 滚动缩放 <i>·</i> 点击翻阅</p>
+      </footer>
+      <section id="reader" class="reader hidden" aria-label="画册阅读器">
+        <div class="reader-heading"><button id="back" class="back-btn flex items-center gap-2"><svg viewBox="0 0 24 24" set:html={icons.left}/>返回桌面</button><span class="reader-divider"></span><div><h2 id="reader-title"></h2><p id="reader-meta"></p></div></div>
+        <div class="reader-top-actions"><button id="fullscreen" class="icon-btn" aria-label="全屏浏览"><svg viewBox="0 0 24 24" set:html={icons.expand}/></button><button id="close-reader" class="icon-btn" aria-label="合上画册"><svg viewBox="0 0 24 24" set:html={icons.close}/></button></div>
+        <div id="page-captions" class="page-captions"><span id="left-caption"></span><span id="right-caption"></span></div>
+        <div id="video-controls" class="video-controls hidden"><button id="play-video" class="flex items-center gap-2"><svg viewBox="0 0 24 24" set:html={icons.play}/><span>播放本页影像</span></button><button id="video-mute" aria-label="开启视频声音">声音关闭</button></div>
+        <div class="reader-navigation flex items-center gap-5"><button id="prev-page" aria-label="上一页"><svg viewBox="0 0 24 24" set:html={icons.left}/></button><div><span id="page-current">01 — 02</span><span class="page-of"> / <span id="page-total">06</span></span></div><button id="next-page" aria-label="下一页"><svg viewBox="0 0 24 24" set:html={icons.right}/></button></div>
+        <p class="reader-hint">点击左右书页翻阅 <span>·</span> ← → 翻页 <span>·</span> ESC 返回</p>
+      </section>
+      <aside id="catalog" class="catalog hidden" aria-label="画册目录"><div class="panel-heading flex items-center justify-between"><div><span class="eyebrow">YOUR COLLECTION</span><h2>时光目录</h2></div><button id="catalog-close" class="icon-btn" aria-label="关闭目录"><svg viewBox="0 0 24 24" set:html={icons.close}/></button></div><div id="catalog-list"></div><p class="catalog-note">每段回忆，都有自己的位置。</p></aside>
+      <dialog id="help-dialog"><button class="dialog-close icon-btn" data-close aria-label="关闭操作指南"><svg viewBox="0 0 24 24" set:html={icons.close}/></button><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2>自在地，翻一翻。</h2><p class="dialog-description">这里没有匆忙，只有值得重温的时光。</p><div class="help-rows"><p><span>探索桌面</span><span>按住拖动 · 触屏双指缩放</span></p><p><span>靠近一点</span><span>滚轮或底部 ＋ / − 缩放</span></p><p><span>翻开画册</span><span>点击任意一本画册</span></p><p><span>翻阅书页</span><span>点击书页边缘，或按 ← →</span></p><p><span>回到桌面</span><span>按 ESC 或点击返回</span></p><p><span>收藏自己的时光</span><span>新建画册，加入照片和视频</span></p></div><button class="primary-btn w-full" data-close>开始探索</button><p class="local-note">示例照片来自 Pexels，影像为 MDN 的 CC0 示例。</p></dialog>
+      <dialog id="create-dialog"><button class="dialog-close icon-btn" data-close aria-label="关闭新建画册"><svg viewBox="0 0 24 24" set:html={icons.close}/></button><span class="eyebrow">A NEW CHAPTER</span><h2>收藏一段新时光。</h2><p class="dialog-description">把照片与影像，装进属于你的画册。</p><form id="create-form"><label class="field-label" for="album-name">画册名称</label><input id="album-name" name="title" maxlength="20" placeholder="比如：和你一起的夏天" required/><div class="form-row"><div><label class="field-label" for="album-category">分类</label><select id="album-category"><option>日常</option><option>旅途</option><option>片刻</option></select></div><div><label class="field-label" for="album-color">封面颜色</label><input type="color" id="album-color" value="#40564b"/></div></div><label for="media-files" class="upload-area"><svg viewBox="0 0 24 24" set:html={icons.upload}/><span id="file-label">选择照片或视频</span><small>JPG、PNG、WebP、MP4、WebM · 最多 20 页</small></label><input id="media-files" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple required/><label class="field-label" for="album-caption">一句话介绍 <span>（可选）</span></label><input id="album-caption" maxlength="80" placeholder="想给这段回忆留下什么话？"/><button id="create-submit" class="primary-btn w-full" type="submit">放到我的桌面</button><p class="local-note">文件仅保存在当前浏览器，不会上传。清除浏览器数据会移除画册。</p></form></dialog>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+      <div id="announcer" class="sr-only" aria-live="polite"></div>
+    </main>
+    <script>import '../lib/app';</script>
+  </body>
+</html>
