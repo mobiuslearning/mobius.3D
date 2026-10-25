@@ -145,6 +145,14 @@ export class FolioScene {
       const tex=new THREE.VideoTexture(video);tex.colorSpace=THREE.SRGBColorSpace;
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(W*.89,H*.5),new THREE.MeshBasicMaterial({map:tex,toneMapped:false}));
       mesh.rotation.x=-Math.PI/2;mesh.position.set(i===0?-W:0,i===0?.38:.278,0);mesh.visible=false;book.root.add(mesh);this.videoMeshes.push(mesh);this.videos.push(video);
+      video.addEventListener('loadedmetadata',()=>{
+        const aspect=video.videoWidth/video.videoHeight;if(!Number.isFinite(aspect)||aspect<=0)return;
+        const width=aspect>1?W*.9:W*.883,height=aspect>1?H*.515:H*.844;
+        mesh.scale.set(width/(W*.89),height/(H*.5),1);mesh.position.z=aspect>1?-.072:-.049;
+        const frameAspect=width/height;
+        tex.repeat.set(aspect>frameAspect?frameAspect/aspect:1,aspect<frameAspect?aspect/frameAspect:1);
+        tex.offset.set((1-tex.repeat.x)/2,(1-tex.repeat.y)/2);
+      });
       video.addEventListener('playing',()=>{mesh.visible=true;});
       video.addEventListener('error',()=>this.onVideo(this.videos));
     });

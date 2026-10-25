@@ -30,11 +30,12 @@ function updateReader(album:Album|null){
   if(album){openingElement=document.activeElement as HTMLElement;}
   active=album;document.body.classList.toggle('is-reading',!!album);show($('reader'),!!album);show($('catalog'),false);$('catalog-toggle').setAttribute('aria-expanded','false');
   ['intro','filters','desk-footer'].forEach(id=>{$(id).inert=!!album;$(id).setAttribute('aria-hidden',String(!!album));});
+  if(fallback)show($('webgl-fallback'),!album);
   if(album){$('reader-title').textContent=album.title;$('reader-meta').textContent=`${album.date}  /  ${album.location}`;$('announcer').textContent=`已翻开《${album.title}》`;$('back').focus({preventScroll:true});}
   else {currentVideos.forEach(v=>v.pause());currentVideos=[];show($('video-controls'),false);$('announcer').textContent='已回到桌面';if(openingElement?.closest('#catalog'))$('catalog-toggle').focus({preventScroll:true});else if(openingElement&&openingElement!==document.body)openingElement.focus({preventScroll:true});}
 }
 function updateSpread(index:number,total:number,pages:AlbumPage[]){
-  spread=index;$('page-current').textContent=`${pad(index*2+1)} — ${pad(Math.min(index*2+2,total))}`;$('page-total').textContent=pad(total);
+  spread=index;const first=index*2+1,last=Math.min(index*2+2,total);$('page-current').textContent=first===last?pad(first):`${pad(first)} — ${pad(last)}`;$('page-total').textContent=pad(total);
   $('left-caption').textContent=pages[0]?.caption||'';$('right-caption').textContent=pages[1]?.caption||'';
   $<HTMLButtonElement>('prev-page').disabled=index===0;$<HTMLButtonElement>('next-page').disabled=index>=Math.ceil(total/2)-1;
   $('announcer').textContent=`${active?.title}，第 ${index*2+1} 至 ${Math.min(index*2+2,total)} 页`;
